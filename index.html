@@ -190,7 +190,7 @@
 
       <!-- スタッフリスト -->
       <TransitionGroup name="list" tag="div" class="space-y-2.5 relative">
-        <div v-for="(staff, index) in currentStore.staffs" :key="staff.id"
+        <div v-for="(staff, index) in currentStore?.staffs" :key="staff.id"
              draggable="true"
              @dragstart="onDragStart(index)"
              @dragover.prevent
@@ -238,59 +238,25 @@
         </div>
       </TransitionGroup>
 
-      <div v-if="!currentStore.staffs || currentStore.staffs.length === 0" class="text-center py-8 text-slate-400 text-sm">
+      <div v-if="!currentStore?.staffs || currentStore.staffs.length === 0" class="text-center py-8 text-slate-400 text-sm">
         登録されているスタッフがいません。「スタッフ追加」から登録してください。
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-      <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-        <i class="fa-solid fa-clock-rotate-left text-slate-500"></i>
-        <span>最近の投稿チェック履歴</span>
-      </h2>
-
-      <div v-if="postHistory.length > 0" class="space-y-3">
-        <div v-for="log in postHistory" :key="log.id" class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
-          <div class="flex items-center gap-2.5">
-            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center">
-              <i class="fa-solid fa-check"></i>
-            </span>
-            <div>
-              <span class="font-bold text-slate-800 text-sm">{{ log.staffName }}</span>
-              <span class="text-slate-400 ml-2">({{ log.completedAt }})</span>
-              <p v-if="log.memo" class="text-slate-600 mt-0.5 italic">「{{ log.memo }}」</p>
-            </div>
-          </div>
-          <a v-if="log.url" :href="log.url" target="_blank" class="text-brand-600 hover:underline font-semibold flex items-center gap-1 self-end sm:self-auto">
-            投稿を確認 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-          </a>
-        </div>
-      </div>
-      <div v-else class="text-slate-400 text-xs py-4 text-center">
-        まだ投稿履歴がありません。投稿が完了するとこちらに記録されます。
-      </div>
-    </div>
 
     <!-- モーダル 1: 投稿チェック完了モーダル -->
     <div v-if="showPostModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
-        <h3 class="text-lg font-bold text-slate-900 mb-1">🎉 投稿チェック・完了</h3>
-        <p class="text-xs text-slate-500 mb-4">投稿を行った情報を記録し、次の担当者へシフトします。</p>
+        <h3 class="text-lg font-bold text-slate-900 mb-1">🎉 投稿完了の確認</h3>
+        <p class="text-xs text-slate-500 mb-4">現在の担当者の投稿を完了として、次の担当者へシフトしますか？</p>
 
         <div class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">投稿者</label>
-            <input type="text" :value="currentStaff?.name" disabled class="w-full bg-slate-100 border border-slate-200 text-slate-600 rounded-xl px-3 py-2 text-sm font-bold">
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">投稿URL（任意）</label>
-            <input v-model="postForm.url" type="url" placeholder="https://..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">一言メモ・ノウハウ概要（任意）</label>
-            <textarea v-model="postForm.memo" rows="2" placeholder="接客事例について投稿しました" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+            <label class="block text-xs font-bold text-slate-700 mb-1">現在の投稿担当者</label>
+            <div class="w-full bg-slate-100 border border-slate-200 text-slate-600 rounded-xl px-3 py-2 text-sm font-bold flex items-center gap-2">
+                <i class="fa-solid fa-user text-slate-400"></i>
+                {{ currentStaff?.name }}
+            </div>
           </div>
         </div>
 
@@ -298,8 +264,9 @@
           <button @click="showPostModal = false" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">
             キャンセル
           </button>
-          <button @click="submitPost" class="px-5 py-2 text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-md transition">
-            投稿完了にして次へ
+          <button @click="submitPost" class="px-5 py-2 text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-md transition flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i>
+            完了にして次へ
           </button>
         </div>
       </div>
@@ -337,7 +304,7 @@
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">新規店舗追加</label>
             <div class="flex gap-2">
-              <input v-model="newStoreName" @keyup.enter="addStore" type="text" placeholder="店舗名 (例: マルチメディアAkiba)" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+              <input v-model="newStoreName" @keyup.enter="addStore" type="text" placeholder="店舗名 (例: 東京本店)" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
               <button @click="addStore" class="bg-brand-500 text-white font-bold px-3 py-2 rounded-xl text-xs hover:bg-brand-600 transition">
                 追加
               </button>
@@ -387,48 +354,349 @@
   <script>
     const { createApp, ref, computed, onMounted, watch } = Vue;
 
-    const LOCAL_STORAGE_KEY = 'nohowflow_app_data_v3';
+    const LOCAL_STORAGE_KEY = 'nohowflow_app_data_v4'; // Changed key to reset local storage if needed
 
-    // デフォルト店舗データ（ローカルストレージが空の場合のみ初期値として使用）
+    // 4名の適当な名前の初期値
     const defaultStores = [
       {
-        id: 'yodobashi-yokohama',
-        name: 'ヨドバシカメラ マルチメディア横浜',
+        id: 'default-store',
+        name: '本店',
         cycleDays: 7,
         currentIndex: 0,
         dueDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
         staffs: [
-          { id: '1', name: '中野 禎治' },
-          { id: '2', name: '古田 奈々' },
-          { id: '3', name: '宇田川 和政' },
-          { id: '4', name: '宮下 莉紗' },
-          { id: '5', name: '尾形 萌' },
-          { id: '6', name: '工藤 優葵音' },
-          { id: '7', name: '檜室 大貴' }
+          { id: '1', name: '佐藤 健太' },
+          { id: '2', name: '鈴木 恵' },
+          { id: '3', name: '高橋 大輔' },
+          { id: '4', name: '田中 麻衣' }
         ]
       }
     ];
 
     createApp({
       setup() {
-        const stores = ref(defaultStores);
-        const selectedStoreId = ref('yodobashi-yokohama');
-        const postHistory = ref([]);
+        const stores = ref([]);
+        const selectedStoreId = ref('');
 
-        // Form & Drag states
+        // Modals state
         const showPostModal = ref(false);
         const showStaffModal = ref(false);
         const showStoreModal = ref(false);
         const showConfirmModal = ref(false);
 
+        // Form state
         const isEditingStaff = ref(false);
         const editingStaffId = ref(null);
         const staffForm = ref({ name: '' });
-        const postForm = ref({ url: '', memo: '' });
         const newStoreName = ref('');
         const dragIndex = ref(null);
 
         // Confirm Modal state
         const confirmTitle = ref('');
         const confirmMessage = ref('');
-        let confirmAction =
+        let confirmAction = null;
+
+        // Computed properties for current store
+        const currentStore = computed(() => {
+          return stores.value.find(s => s.id === selectedStoreId.value) || stores.value[0];
+        });
+
+        const currentStaff = computed(() => {
+          if (!currentStore.value || !currentStore.value.staffs || currentStore.value.staffs.length === 0) return null;
+          return currentStore.value.staffs[currentStore.value.currentIndex];
+        });
+
+        // Computed properties for dates and display
+        const formattedDueDate = computed(() => {
+          if (!currentStore.value || !currentStore.value.dueDate) return '';
+          const d = new Date(currentStore.value.dueDate);
+          return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+        });
+
+        const daysRemainingText = computed(() => {
+          if (!currentStore.value || !currentStore.value.dueDate) return '';
+          const due = new Date(currentStore.value.dueDate);
+          due.setHours(23, 59, 59, 999);
+          const now = new Date();
+          const diffTime = due - now;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > 0) return `残り ${diffDays} 日`;
+          if (diffDays === 0) return '今日が期日です！';
+          return `期日を ${Math.abs(diffDays)} 日過ぎています`;
+        });
+
+        const nextStaff = computed(() => {
+          if (!currentStore.value || !currentStore.value.staffs || currentStore.value.staffs.length <= 1) return null;
+          const nextIdx = (currentStore.value.currentIndex + 1) % currentStore.value.staffs.length;
+          return currentStore.value.staffs[nextIdx];
+        });
+        
+        const formattedNextDueDate = computed(() => {
+            if (!currentStore.value || !currentStore.value.dueDate) return '';
+            const nextDue = new Date(currentStore.value.dueDate);
+            nextDue.setDate(nextDue.getDate() + currentStore.value.cycleDays);
+            return `${nextDue.getFullYear()}/${String(nextDue.getMonth() + 1).padStart(2, '0')}/${String(nextDue.getDate()).padStart(2, '0')}`;
+        });
+
+        const getNextIndex = () => {
+           if (!currentStore.value || !currentStore.value.staffs || currentStore.value.staffs.length <= 1) return -1;
+           return (currentStore.value.currentIndex + 1) % currentStore.value.staffs.length;
+        };
+
+        const getStaffRowClass = (index) => {
+          if (!currentStore.value) return '';
+          if (index === currentStore.value.currentIndex) return 'border-brand-300 bg-brand-50/30';
+          if (index === getNextIndex()) return 'border-slate-200 bg-slate-50/50';
+          return 'border-transparent hover:bg-slate-50/50';
+        };
+
+        // Storage logic
+        const loadFromStorage = () => {
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (stored) {
+            try {
+              const parsedData = JSON.parse(stored);
+              stores.value = parsedData.stores || defaultStores;
+              selectedStoreId.value = parsedData.selectedStoreId || stores.value[0].id;
+            } catch (e) {
+              stores.value = JSON.parse(JSON.stringify(defaultStores));
+              selectedStoreId.value = defaultStores[0].id;
+            }
+          } else {
+            stores.value = JSON.parse(JSON.stringify(defaultStores));
+            selectedStoreId.value = defaultStores[0].id;
+          }
+        };
+
+        const saveToStorage = () => {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
+            stores: stores.value,
+            selectedStoreId: selectedStoreId.value
+          }));
+        };
+
+        watch([stores, selectedStoreId], () => {
+          saveToStorage();
+        }, { deep: true });
+
+        // Action logic
+        const openPostModal = () => {
+          showPostModal.value = true;
+        };
+
+        const submitPost = () => {
+          if (!currentStore.value) return;
+          
+          // Move to next staff and update date
+          currentStore.value.currentIndex = (currentStore.value.currentIndex + 1) % currentStore.value.staffs.length;
+          
+          const newDueDate = new Date(currentStore.value.dueDate);
+          newDueDate.setDate(newDueDate.getDate() + currentStore.value.cycleDays);
+          currentStore.value.dueDate = newDueDate.toISOString();
+
+          showPostModal.value = false;
+          
+          triggerConfetti();
+        };
+
+        const skipToNext = () => {
+          if (!currentStore.value || !currentStore.value.staffs || currentStore.value.staffs.length === 0) return;
+          // ただ次の人にインデックスを進める（日付はそのまま）
+          currentStore.value.currentIndex = (currentStore.value.currentIndex + 1) % currentStore.value.staffs.length;
+        };
+
+        const triggerConfetti = () => {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#22c55e', '#16a34a', '#dcfce7']
+          });
+        };
+
+        // Staff Management
+        const openAddStaffModal = () => {
+          isEditingStaff.value = false;
+          staffForm.value = { name: '' };
+          showStaffModal.value = true;
+        };
+
+        const editStaff = (staff) => {
+          isEditingStaff.value = true;
+          editingStaffId.value = staff.id;
+          staffForm.value = { name: staff.name };
+          showStaffModal.value = true;
+        };
+
+        const saveStaff = () => {
+          if (!staffForm.value.name.trim() || !currentStore.value) return;
+
+          if (isEditingStaff.value) {
+            const staff = currentStore.value.staffs.find(s => s.id === editingStaffId.value);
+            if (staff) staff.name = staffForm.value.name.trim();
+          } else {
+            currentStore.value.staffs.push({
+              id: Date.now().toString(),
+              name: staffForm.value.name.trim()
+            });
+          }
+          showStaffModal.value = false;
+        };
+
+        const deleteStaff = (id) => {
+          confirmTitle.value = 'スタッフの削除';
+          confirmMessage.value = 'このスタッフを削除してもよろしいですか？現在の担当順に影響する場合があります。';
+          confirmAction = () => {
+            if (!currentStore.value) return;
+            const index = currentStore.value.staffs.findIndex(s => s.id === id);
+            if (index > -1) {
+              currentStore.value.staffs.splice(index, 1);
+              // 担当者が消えた場合の調整
+              if (currentStore.value.currentIndex >= currentStore.value.staffs.length) {
+                currentStore.value.currentIndex = 0;
+              }
+            }
+            showConfirmModal.value = false;
+          };
+          showConfirmModal.value = true;
+        };
+
+        const moveStaff = (index, direction) => {
+          if (!currentStore.value) return;
+          const newIndex = index + direction;
+          if (newIndex < 0 || newIndex >= currentStore.value.staffs.length) return;
+
+          const staffList = currentStore.value.staffs;
+          // 配列要素の入れ替え
+          const temp = staffList[index];
+          staffList[index] = staffList[newIndex];
+          staffList[newIndex] = temp;
+
+          // 現在担当者のインデックスも追従させる
+          if (currentStore.value.currentIndex === index) {
+            currentStore.value.currentIndex = newIndex;
+          } else if (currentStore.value.currentIndex === newIndex) {
+            currentStore.value.currentIndex = index;
+          }
+        };
+
+        // Drag and drop logic
+        const onDragStart = (index) => {
+            dragIndex.value = index;
+        };
+
+        const onDrop = (dropIndex) => {
+            if (dragIndex.value === null || dragIndex.value === dropIndex || !currentStore.value) return;
+            
+            const staffList = currentStore.value.staffs;
+            const draggedItem = staffList[dragIndex.value];
+            
+            // Remove the dragged item
+            staffList.splice(dragIndex.value, 1);
+            // Insert it at the drop position
+            staffList.splice(dropIndex, 0, draggedItem);
+            
+            // 担当者インデックスの調整は複雑になるため、単純にインデックス番号で管理しているこの実装では
+            // ドラッグ＆ドロップで担当者が意図せず変わる可能性がある。
+            // 厳密にやるなら、現在担当のIDを保持して探し直すなどの処理が必要。
+            // ここでは簡易的に、現在担当者がドラッグされた場合は新しい位置を担当者にする
+            if(currentStore.value.currentIndex === dragIndex.value){
+                currentStore.value.currentIndex = dropIndex;
+            } else if (currentStore.value.currentIndex > dragIndex.value && currentStore.value.currentIndex <= dropIndex) {
+                currentStore.value.currentIndex--;
+            } else if (currentStore.value.currentIndex < dragIndex.value && currentStore.value.currentIndex >= dropIndex) {
+                currentStore.value.currentIndex++;
+            }
+
+            dragIndex.value = null;
+        };
+
+        // Store Management
+        const openStoreModal = () => {
+          newStoreName.value = '';
+          showStoreModal.value = true;
+        };
+
+        const addStore = () => {
+          if (!newStoreName.value.trim()) return;
+          const newStore = {
+            id: 'store-' + Date.now(),
+            name: newStoreName.value.trim(),
+            cycleDays: 7,
+            currentIndex: 0,
+            dueDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+            staffs: []
+          };
+          stores.value.push(newStore);
+          selectedStoreId.value = newStore.id; // Switch to new store
+          newStoreName.value = '';
+        };
+
+        const deleteStore = (id) => {
+          confirmTitle.value = '店舗の削除';
+          confirmMessage.value = 'この店舗を削除してもよろしいですか？この操作は元に戻せません。';
+          confirmAction = () => {
+            stores.value = stores.value.filter(s => s.id !== id);
+            if (selectedStoreId.value === id) {
+              selectedStoreId.value = stores.value[0]?.id || '';
+            }
+            showConfirmModal.value = false;
+          };
+          showConfirmModal.value = true;
+        };
+
+        const executeConfirm = () => {
+          if (confirmAction) confirmAction();
+        };
+
+        onMounted(() => {
+          loadFromStorage();
+        });
+
+        return {
+          stores,
+          selectedStoreId,
+          currentStore,
+          currentStaff,
+          nextStaff,
+          formattedDueDate,
+          formattedNextDueDate,
+          daysRemainingText,
+          getNextIndex,
+          getStaffRowClass,
+          
+          showPostModal,
+          showStaffModal,
+          showStoreModal,
+          showConfirmModal,
+          
+          isEditingStaff,
+          staffForm,
+          newStoreName,
+          confirmTitle,
+          confirmMessage,
+          
+          saveToStorage,
+          openPostModal,
+          submitPost,
+          skipToNext,
+          
+          openAddStaffModal,
+          editStaff,
+          saveStaff,
+          deleteStaff,
+          moveStaff,
+          onDragStart,
+          onDrop,
+          
+          openStoreModal,
+          addStore,
+          deleteStore,
+          executeConfirm
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
