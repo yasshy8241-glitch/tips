@@ -108,15 +108,23 @@
               <h2 class="text-xl sm:text-3xl font-extrabold tracking-tight leading-tight">
                 {{ currentStaff ? currentStaff.name : '担当者が未登録' }}
               </h2>
-              <p class="text-[10px] sm:text-sm mt-1 sm:mt-1.5 opacity-90 flex items-center gap-1.5">
-                <i class="fa-regular fa-clock"></i>
-                期日 (日曜日): <span class="font-bold underline decoration-brand-400 underline-offset-2 sm:underline-offset-4">{{ formattedDueDate }}</span>
-              </p>
+              
+              <!-- 期日表示 ＆ 手動変更ボタン -->
+              <div class="text-[10px] sm:text-sm mt-1 sm:mt-1.5 opacity-90 flex items-center gap-2">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-regular fa-clock"></i>
+                  期日 (日曜日): <span class="font-bold underline decoration-brand-400 underline-offset-2 sm:underline-offset-4">{{ formattedDueDate }}</span>
+                </span>
+                <button @click="openDateEditModal" class="bg-white/10 hover:bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-lg border border-white/20 transition flex items-center gap-1">
+                  <i class="fa-solid fa-pen text-[9px]"></i>変更
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
 
-        <!-- 下部ステータス（残り日数のみ表示） -->
+        <!-- 下部残り日数 -->
         <div class="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-700/60">
           <div class="text-xs font-semibold flex items-center gap-1.5 text-slate-300">
             <i class="fa-solid fa-hourglass-half text-brand-400"></i>
@@ -230,7 +238,33 @@
     </div>
 
 
-    <!-- モーダル 1: スタッフ追加・編集モーダル -->
+    <!-- モーダル 1: 期日変更モーダル -->
+    <div v-if="showDateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
+        <h3 class="text-lg font-bold text-slate-900 mb-1">📅 期日の変更</h3>
+        <p class="text-xs text-slate-500 mb-4">日曜日を選択してください。次回の期日も自動で翌週に設定されます。</p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">期日 (日曜日)</label>
+            <input v-model="dateForm.dueDate" type="date" @change="validateSelectedDate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            <p v-if="dateForm.errorMsg" class="text-[11px] text-red-500 mt-1 font-medium">{{ dateForm.errorMsg }}</p>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-6">
+          <button @click="showDateModal = false" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">
+            キャンセル
+          </button>
+          <button @click="saveDateEdit" class="px-5 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition">
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- モーダル 2: スタッフ追加・編集モーダル -->
     <div v-if="showStaffModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
         <h3 class="text-lg font-bold text-slate-900 mb-4">{{ isEditingStaff ? 'スタッフの編集' : '新規スタッフ追加' }}</h3>
@@ -253,7 +287,7 @@
       </div>
     </div>
 
-    <!-- モーダル 2: 店舗追加・管理モーダル -->
+    <!-- モーダル 3: 店舗追加・管理モーダル -->
     <div v-if="showStoreModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
         <h3 class="text-lg font-bold text-slate-900 mb-2">🏢 店舗の管理・追加</h3>
@@ -290,7 +324,7 @@
       </div>
     </div>
 
-    <!-- モーダル 3: 確認ダイアログ -->
+    <!-- モーダル 4: 確認ダイアログ -->
     <div v-if="showConfirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
         <h3 class="text-lg font-bold text-slate-900 mb-2">{{ confirmTitle }}</h3>
@@ -314,7 +348,7 @@
 
     const LOCAL_STORAGE_KEY = 'nohowflow_app_data_v4';
 
-    // 直近の日曜日を取得する関数（日曜日なら当日、それ以外は次の日曜日）
+    // 直近の日曜日を取得する関数
     const getNextSunday = (date = new Date()) => {
       const d = new Date(date);
       const day = d.getDay();
@@ -346,6 +380,7 @@
         const selectedStoreId = ref('');
 
         // Modals state
+        const showDateModal = ref(false);
         const showStaffModal = ref(false);
         const showStoreModal = ref(false);
         const showConfirmModal = ref(false);
@@ -354,6 +389,7 @@
         const isEditingStaff = ref(false);
         const editingStaffId = ref(null);
         const staffForm = ref({ name: '' });
+        const dateForm = ref({ dueDate: '', errorMsg: '' });
         const newStoreName = ref('');
         const dragIndex = ref(null);
 
@@ -425,17 +461,6 @@
               const parsedData = JSON.parse(stored);
               stores.value = parsedData.stores || defaultStores;
               selectedStoreId.value = parsedData.selectedStoreId || stores.value[0].id;
-              
-              // 既存データで期日が日曜日以外になっている場合、日曜日に自動補正する
-              stores.value.forEach(store => {
-                const d = new Date(store.dueDate);
-                if (d.getDay() !== 0) {
-                  const diff = 7 - d.getDay();
-                  d.setDate(d.getDate() + diff);
-                  d.setHours(23, 59, 59, 999);
-                  store.dueDate = d.toISOString();
-                }
-              });
             } catch (e) {
               stores.value = JSON.parse(JSON.stringify(defaultStores));
               selectedStoreId.value = defaultStores[0].id;
@@ -456,6 +481,44 @@
         watch([stores, selectedStoreId], () => {
           saveToStorage();
         }, { deep: true });
+
+        // Date Edit Logic
+        const openDateEditModal = () => {
+          if (!currentStore.value) return;
+          const d = new Date(currentStore.value.dueDate);
+          // YYYY-MM-DD format for input[type="date"]
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          dateForm.value.dueDate = `${year}-${month}-${day}`;
+          dateForm.value.errorMsg = '';
+          showDateModal.value = true;
+        };
+
+        const validateSelectedDate = () => {
+          if (!dateForm.value.dueDate) return;
+          const selected = new Date(dateForm.value.dueDate);
+          // getDay() === 0 is Sunday
+          if (selected.getDay() !== 0) {
+            dateForm.value.errorMsg = '⚠️ 日曜日を選択してください。';
+          } else {
+            dateForm.value.errorMsg = '';
+          }
+        };
+
+        const saveDateEdit = () => {
+          if (!dateForm.value.dueDate || !currentStore.value) return;
+          const selected = new Date(dateForm.value.dueDate);
+          
+          if (selected.getDay() !== 0) {
+            dateForm.value.errorMsg = '⚠️ 日曜日を選択してください。';
+            return;
+          }
+
+          selected.setHours(23, 59, 59, 999);
+          currentStore.value.dueDate = selected.toISOString();
+          showDateModal.value = false;
+        };
 
         // Staff Management
         const openAddStaffModal = () => {
@@ -599,16 +662,21 @@
           getNextIndex,
           getStaffRowClass,
           
+          showDateModal,
           showStaffModal,
           showStoreModal,
           showConfirmModal,
           
           isEditingStaff,
           staffForm,
+          dateForm,
           newStoreName,
           confirmTitle,
           confirmMessage,
           
+          openDateEditModal,
+          validateSelectedDate,
+          saveDateEdit,
           saveToStorage,
           
           openAddStaffModal,
