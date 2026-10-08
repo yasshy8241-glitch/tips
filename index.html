@@ -110,13 +110,13 @@
               </h2>
               
               <!-- 期日表示 ＆ 手動変更ボタン -->
-              <div class="text-[10px] sm:text-sm mt-1 sm:mt-1.5 opacity-90 flex items-center gap-2">
+              <div class="text-[10px] sm:text-sm mt-1 sm:mt-1.5 opacity-90 flex items-center gap-2 flex-wrap">
                 <span class="flex items-center gap-1.5">
                   <i class="fa-regular fa-clock"></i>
                   期日 (日曜日): <span class="font-bold underline decoration-brand-400 underline-offset-2 sm:underline-offset-4">{{ formattedDueDate }}</span>
                 </span>
-                <button @click="openDateEditModal" class="bg-white/10 hover:bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-lg border border-white/20 transition flex items-center gap-1">
-                  <i class="fa-solid fa-pen text-[9px]"></i>変更
+                <button @click="openDateEditModal" class="bg-white/10 hover:bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-lg border border-white/20 transition flex items-center gap-1 font-semibold">
+                  <i class="fa-solid fa-calendar-days text-[10px]"></i>期日を変更する
                 </button>
               </div>
 
@@ -238,17 +238,25 @@
     </div>
 
 
-    <!-- モーダル 1: 期日変更モーダル -->
+    <!-- モーダル 1: 期日変更モーダル (日曜日限定) -->
     <div v-if="showDateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
-        <h3 class="text-lg font-bold text-slate-900 mb-1">📅 期日の変更</h3>
-        <p class="text-xs text-slate-500 mb-4">日曜日を選択してください。次回の期日も自動で翌週に設定されます。</p>
+        <h3 class="text-lg font-bold text-slate-900 mb-1">📅 期日 (日曜日) の変更</h3>
+        <p class="text-xs text-slate-500 mb-4">カレンダーから<span class="text-brand-600 font-bold">日曜日</span>を選択してください。月〜土曜日は選択できません。</p>
 
         <div class="space-y-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">期日 (日曜日)</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">期日選択 (日曜日のみ)</label>
+            <!-- inputにchangeイベントで厳格に日曜日チェック -->
             <input v-model="dateForm.dueDate" type="date" @change="validateSelectedDate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
-            <p v-if="dateForm.errorMsg" class="text-[11px] text-red-500 mt-1 font-medium">{{ dateForm.errorMsg }}</p>
+            
+            <!-- エラーメッセージ または 案内文 -->
+            <p v-if="dateForm.errorMsg" class="text-[11px] text-red-500 mt-1.5 font-bold flex items-center gap-1">
+              <i class="fa-solid fa-circle-exclamation"></i>{{ dateForm.errorMsg }}
+            </p>
+            <p v-else class="text-[11px] text-slate-400 mt-1.5">
+              ※ 次回以降の期日も選択した日曜日を基準に自動で翌週に設定されます。
+            </p>
           </div>
         </div>
 
@@ -256,8 +264,8 @@
           <button @click="showDateModal = false" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">
             キャンセル
           </button>
-          <button @click="saveDateEdit" class="px-5 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition">
-            保存
+          <button @click="saveDateEdit" :disabled="dateForm.errorMsg !== ''" class="px-5 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white rounded-xl transition">
+            保存する
           </button>
         </div>
       </div>
@@ -346,7 +354,7 @@
   <script>
     const { createApp, ref, computed, onMounted, watch } = Vue;
 
-    const LOCAL_STORAGE_KEY = 'nohowflow_app_data_v4';
+    const LOCAL_STORAGE_KEY = 'nohowflow_app_data_v5';
 
     // 直近の日曜日を取得する関数
     const getNextSunday = (date = new Date()) => {
@@ -437,7 +445,7 @@
         const formattedNextDueDate = computed(() => {
             if (!currentStore.value || !currentStore.value.dueDate) return '';
             const nextDue = new Date(currentStore.value.dueDate);
-            nextDue.setDate(nextDue.getDate() + currentStore.value.cycleDays);
+            nextDue.setDate(nextDue.getDate() + 7); // 7日後（翌週の日曜日）
             return `${nextDue.getFullYear()}/${String(nextDue.getMonth() + 1).padStart(2, '0')}/${String(nextDue.getDate()).padStart(2, '0')}`;
         });
 
@@ -461,6 +469,17 @@
               const parsedData = JSON.parse(stored);
               stores.value = parsedData.stores || defaultStores;
               selectedStoreId.value = parsedData.selectedStoreId || stores.value[0].id;
+              
+              // 既存データで期日が日曜日以外になっている場合、日曜日に自動補正する
+              stores.value.forEach(store => {
+                const d = new Date(store.dueDate);
+                if (d.getDay() !== 0) {
+                  const diff = 7 - d.getDay();
+                  d.setDate(d.getDate() + diff);
+                  d.setHours(23, 59, 59, 999);
+                  store.dueDate = d.toISOString();
+                }
+              });
             } catch (e) {
               stores.value = JSON.parse(JSON.stringify(defaultStores));
               selectedStoreId.value = defaultStores[0].id;
@@ -486,7 +505,6 @@
         const openDateEditModal = () => {
           if (!currentStore.value) return;
           const d = new Date(currentStore.value.dueDate);
-          // YYYY-MM-DD format for input[type="date"]
           const year = d.getFullYear();
           const month = String(d.getMonth() + 1).padStart(2, '0');
           const day = String(d.getDate()).padStart(2, '0');
@@ -498,9 +516,9 @@
         const validateSelectedDate = () => {
           if (!dateForm.value.dueDate) return;
           const selected = new Date(dateForm.value.dueDate);
-          // getDay() === 0 is Sunday
+          // 曜日チェック: getDay() === 0 が日曜日
           if (selected.getDay() !== 0) {
-            dateForm.value.errorMsg = '⚠️ 日曜日を選択してください。';
+            dateForm.value.errorMsg = '日曜日以外は選択できません。カレンダーで日曜日を選んでください。';
           } else {
             dateForm.value.errorMsg = '';
           }
@@ -511,7 +529,7 @@
           const selected = new Date(dateForm.value.dueDate);
           
           if (selected.getDay() !== 0) {
-            dateForm.value.errorMsg = '⚠️ 日曜日を選択してください。';
+            dateForm.value.errorMsg = '日曜日以外は選択できません。';
             return;
           }
 
